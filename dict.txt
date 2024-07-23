@@ -549,7 +549,7 @@ sabem
 pegue
 cama
 segurança
-i
+centro
 próxima
 acreditar
 jovem
@@ -717,7 +717,7 @@ jesus
 dor
 leve
 rosto
-you
+mar
 sinal
 tom
 foto
@@ -736,12 +736,12 @@ consegui
 ar
 viagem
 pediu
-hey
+junto
 simples
 estive
 linha
 emprego
-michael
+buscar
 sistema
 situação
 voltou
@@ -896,7 +896,7 @@ barco
 bons
 certamente
 área
-tv
+diferença
 mudou
 anda
 avião
