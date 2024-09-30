@@ -1,3 +1,6 @@
+# ignore files with no extension, unignore directories
 *
 !*.*
+!*/
+
 *.o
