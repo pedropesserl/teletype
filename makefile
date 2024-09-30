@@ -16,7 +16,7 @@ DEPS = $(_DEPS:%=$(IDIR)/%)
 all: $(PROGRAM) clean
 
 $(PROGRAM): $(OBJ)
-	$(CC) -o $@ $^
+	$(CC) -o tty $^
 
 clean:
 	rm -f $(OBJ)

@@ -1,0 +1,1 @@
+- suporte a caracteres não ascii
