@@ -2,8 +2,8 @@ CC = gcc
 PROGRAM = teletype
 CFLAGS = -Iinclude -Wall -Wextra
 
-_OBJ = main.o libtermio.o
-_DEPS = libtermio.h
+_OBJ = main.o libtermio.o teletype.o
+_DEPS = libtermio.h teletype.h
 
 SDIR = src
 IDIR = include
