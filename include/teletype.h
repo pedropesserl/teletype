@@ -8,7 +8,7 @@
     } while (0)
 
 #define BG_GREY       "\033[48;5;234m"
-#define FG_LIGHT_GREY "\033[38;5;238m"
+#define FG_LIGHT_GREY "\033[38;5;243m"
 
 // frees all strings in a string array pointed to by `arr` (and the array itself)
 // and assigns NULL to it.
