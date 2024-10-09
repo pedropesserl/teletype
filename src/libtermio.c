@@ -33,15 +33,14 @@ void cursor_left(int cols) {
     printf("\033[%dD", cols);
 }
 
-void cursor_to(int row, int col) {
-    printf("\033[%d;%dH", row, col);
+void cursor_to(Vector2 pos) {
+    printf("\033[%d;%dH", pos.x, pos.y);
 } 
 
-void get_terminal_size(int *rows, int *cols) {
+Vector2 get_terminal_size() {
     struct winsize w;
     ioctl(0, TIOCGWINSZ, &w);
-    *rows = w.ws_row;
-    *cols = w.ws_col;
+    return (Vector2){w.ws_row, w.ws_col};
 }
 
 void prepare_sigint(void (*sign_handler)(int)) {

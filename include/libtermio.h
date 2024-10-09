@@ -4,6 +4,11 @@
 #include <signal.h>
 #include <termios.h>
 
+typedef struct Vector2_s {
+    int x;
+    int y;
+} Vector2;
+
 void hide_cursor();
 
 void show_cursor();
@@ -16,11 +21,10 @@ void cursor_right(int cols);
 
 void cursor_left(int cols);
 
-void cursor_to(int row, int col); 
+void cursor_to(Vector2 pos); 
 
-// stores in rows the number of rows currently in the terminal, and the same for
-// cols and the number of columns.
-void get_terminal_size(int *rows, int *cols);
+// returns a Vector2 with x = number of rows and y = number of columns.
+Vector2 get_terminal_size();
 
 // takes a pointer to a function that describes what should happen when a
 // SIGINT signal is detected; makes the change

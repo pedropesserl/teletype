@@ -10,12 +10,21 @@ static void swap_strings(char **a, char **b) {
     *b = temp;
 }
 
-void destroy_string_array(char ***arr, int size) {
+static void destroy_string_array(char ***arr, int size) {
     for (int i = 0; i < size; i++) {
         free((*arr)[i]);
     }
     free(*arr);
     *arr = NULL;
+}
+
+static void center_line(char *line, char *pad, int pad_size) {
+    int line_len = strlen(line);
+    assert(line_len + 1 <= pad_size && "Length of line to center must not be bigger than padding space available.");
+    memset(pad, ' ', pad_size - 1);
+    memcpy(pad + (pad_size - line_len)/2 - 1, line, line_len);
+    pad[pad_size - 1] = '\0';
+    printf("%s\n", pad);
 }
 
 char **read_dict_from_file(const char *dict_path) {
@@ -49,15 +58,6 @@ char *string_from_dict(char **dict) {
     return s;
 }
 
-static void center_line(char *line, char *pad, int pad_size) {
-    int line_len = strlen(line);
-    assert(line_len + 1 <= pad_size && "Length of line to center must not be bigger than padding space available.");
-    memset(pad, ' ', pad_size - 1);
-    memcpy(pad + (pad_size - line_len)/2 - 1, line, line_len);
-    pad[pad_size - 1] = '\0';
-    printf("%s\n", pad);
-}
-
 char **initialize_playfield(char **dict) {
     char **playfield = malloc(3 * sizeof(char*));
     if (!playfield) {
@@ -69,27 +69,57 @@ char **initialize_playfield(char **dict) {
     return playfield;
 }
 
-void initialize_screen(int term_cols, char **playfield) {
-    char *blank_line = (char*)calloc(term_cols + 1, sizeof(char));
-    char *pad = (char*)calloc(term_cols + 1, sizeof(char));
-    memset(blank_line, ' ', term_cols);
+void free_game(GameState *gs) {
+    destroy_string_array(&gs->playfield, 3);
+    destroy_string_array(&gs->dict, 1000);
+    free(gs->timer.string);
+}
 
-    printf("%s%s", BG_GREY, FG_LIGHT_GREY);
+void scroll_playfield(char **playfield, char **dict) {
+    swap_strings(&playfield[0], &playfield[1]);
+    swap_strings(&playfield[1], &playfield[2]);
+    free(playfield[2]);
+    playfield[2] = string_from_dict(dict);
+}
+
+void initialize_screen(GameState *gs, Vector2 term_size) {
+    int term_rows = term_size.x;
+    int term_cols = term_size.y;
+
+    char *blank_line = (char*)calloc(term_cols + 1, sizeof(char));
+    memset(blank_line, ' ', term_cols);
+    char *pad = (char*)calloc(term_cols + 1, sizeof(char));
+    sprintf(gs->timer.string, "%02ld:%02ld", gs->timer.seconds / 60, gs->timer.seconds % 60);
+
+    cursor_to((Vector2){1, 1});
+    printf("%s", BG_GREY);
+    for (int i = 0; i < (term_rows - GAME_HEIGHT) / 2; i++) {
+        printf("%s", blank_line);
+        cursor_down(1);
+        cursor_left(term_cols);
+    }
+    printf("%s", FG_WHITE);
+    center_line(gs->timer.string, pad, term_cols + 1);
+    gs->timer.pos = (Vector2){(term_rows - GAME_HEIGHT) / 2 + 1, term_cols / 2 - 2};
+    printf("%s", FG_LIGHT_GREY);
     printf("%s\n", blank_line);
-    printf("%s\n", blank_line);
-    center_line(playfield[0], pad, term_cols + 1);
-    center_line(playfield[1], pad, term_cols + 1);
-    center_line(playfield[2], pad, term_cols + 1);
-    printf("%s\n", blank_line);
+    center_line(gs->playfield[0], pad, term_cols + 1);
+    center_line(gs->playfield[1], pad, term_cols + 1);
+    center_line(gs->playfield[2], pad, term_cols + 1);
+    for (int i = (term_rows + GAME_HEIGHT) / 2 + 1; i < term_rows; i++) {
+        printf("%s\n", blank_line);
+    }
     printf("%s", blank_line);
+    fflush(stdout);
 
     free(blank_line);
     free(pad);
 }
 
-void update_playfield(char **playfield, char **dict) {
-    swap_strings(&playfield[0], &playfield[1]);
-    swap_strings(&playfield[1], &playfield[2]);
-    free(playfield[2]);
-    playfield[2] = string_from_dict(dict);
+void update_timer(Timer *timer) {
+    timer->seconds--;
+    sprintf(timer->string, "%02ld:%02ld", timer->seconds / 60, timer->seconds % 60);
+    cursor_to(timer->pos);
+    printf("%s%s", FG_WHITE, timer->string);
+    fflush(stdout);
 }

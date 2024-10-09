@@ -4,40 +4,33 @@
 #include "libtermio.h"
 #include "teletype.h"
 
-int cursor;
+#include <string.h>
 
 int main() {
     srand(time(0));
 
-    char **dict = read_dict_from_file("resources/dict_ascii.txt");
-    char **playfield = initialize_playfield(dict);
+    GameState gs = {
+        .timer = {
+            .seconds = 10,
+            .string = (char*)calloc(5 + 1, sizeof(char)),
+        },
+        .cursor = 0,
+        .dict = read_dict_from_file("resources/dict_ascii.txt"),
+        .playfield = initialize_playfield(gs.dict),
+    };
 
-    int term_rows, term_cols;
-    get_terminal_size(&term_rows, &term_cols);
-    initialize_screen(term_cols, playfield);
+    Vector2 term_size = get_terminal_size();
+    initialize_screen(&gs, term_size);
 
-    /* cursor = 0; */
-
-    /* time_t timer = 30; */
-    /* printf("%02ld:%02ld\n", timer / 60, timer % 60); */
-    /* time_t now = time(NULL); */
-    /* while (timer > 0) { */
-    /*     if (time(NULL) > now) { */
-    /*         timer--; */
-    /*         now = time(NULL); */
-    /*         printf("%02ld:%02ld\n", timer / 60, timer % 60); */
-    /*     } */
-    /* } */
-
-    for (int i = 10; i--;) {
-        update_playfield(playfield, dict);
-        getchar();
-        cursor_up(7);
-        cursor_left(term_cols);
-        initialize_screen(term_cols, playfield);
+    time_t time_control = time(NULL);
+    while (gs.timer.seconds > 0) {
+        if (time(NULL) > time_control) {
+            time_control = time(NULL);
+            scroll_playfield(gs.playfield, gs.dict);
+            update_timer(&gs.timer);
+        }
     }
 
-    destroy_string_array(&playfield, 3);
-    destroy_string_array(&dict, 1000);
+    free_game(&gs);
     return 0;
 }
