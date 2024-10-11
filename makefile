@@ -1,6 +1,6 @@
 CC = gcc
 PROGRAM = teletype
-CFLAGS = -Iinclude -Wall -Wextra
+CFLAGS = -Iinclude -Wall -Wextra -g
 
 _OBJ = main.o libtermio.o teletype.o
 _DEPS = libtermio.h teletype.h

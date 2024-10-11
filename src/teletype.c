@@ -49,8 +49,12 @@ char *string_from_dict(char **dict) {
     size_t sz = 0;
     while (sz < 70) {
         char *next = dict[rand() % 1000];
-        sz += strlen(next);
-        s = realloc(s, sz);
+        sz += strlen(next) + 1;
+        char *new_s = realloc(s, sz);
+        if (!new_s) {
+            MEM_ERR;
+        }
+        s = new_s;
         strcat(s, next);
     }
     // removing last space
@@ -86,9 +90,9 @@ void initialize_screen(GameState *gs, Vector2 term_size) {
     int term_rows = term_size.x;
     int term_cols = term_size.y;
 
-    char *blank_line = (char*)calloc(term_cols + 1, sizeof(char));
+    char *blank_line = calloc(term_cols + 1, sizeof(char));
     memset(blank_line, ' ', term_cols);
-    char *pad = (char*)calloc(term_cols + 1, sizeof(char));
+    char *pad = calloc(term_cols + 1, sizeof(char));
     sprintf(gs->timer.string, "%02ld:%02ld", gs->timer.seconds / 60, gs->timer.seconds % 60);
 
     cursor_to((Vector2){1, 1});
