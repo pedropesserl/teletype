@@ -23,6 +23,8 @@ void cursor_left(int cols);
 
 void cursor_to(Vector2 pos); 
 
+void clear_screen();
+
 // returns a Vector2 with x = number of rows and y = number of columns.
 Vector2 get_terminal_size();
 

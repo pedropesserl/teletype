@@ -1,61 +1,72 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 #include "libtermio.h"
 #include "teletype.h"
 
-#include <assert.h>
-#include <string.h>
-static void center_line(char *line, char *pad, int pad_size) {
-    int line_len = strlen(line);
-    assert(line_len + 1 <= pad_size && "Length of line to center must not be bigger than padding space available.");
-    memset(pad, ' ', pad_size - 1);
-    memcpy(pad + (pad_size - line_len)/2 - 1, line, line_len);
-    pad[pad_size - 1] = '\0';
-    printf("%s\n", pad);
+static struct termios term_config;
+
+void sigint_handler(int signum) {
+    (void)signum;
+    set_stdin_flush(&term_config);
+    clear_screen();
+    show_cursor();
+    exit(0);
 }
 
-
-
 int main() {
+    disable_canonical_stdin(&term_config);
+    prepare_sigint(sigint_handler);
     srand(time(0));
 
     GameState gs = {
         .timer = {
-            .seconds = 10,
+            .seconds = 30,
             .string = calloc(5 + 1, sizeof(char)),
         },
-        .cursor = 0,
+        .cursor_pos = (Vector2){0},
         .dict = read_dict_from_file("resources/dict_ascii.txt"),
         .playfield = initialize_playfield(gs.dict),
+        .started = false,
+        .word_count = 0,
+        .no_error = true,
     };
 
-    Vector2 term_size = get_terminal_size();
-    initialize_screen(&gs, term_size);
+    initialize_screen(&gs);
 
     time_t time_control = time(NULL);
+    int timer_seconds = gs.timer.seconds;
     while (gs.timer.seconds > 0) {
-        if (time(NULL) > time_control) { // one second has passed
+        if (gs.started && time(NULL) > time_control) { // one second has passed
             time_control = time(NULL);
-            update_timer(&gs.timer);
+            update_timer(&gs);
         }
-        scroll_playfield(gs.playfield, gs.dict);
 
-        // print_playfield() {
-        Vector2 term_size = get_terminal_size();
-        int term_rows = term_size.x;
-        int term_cols = term_size.y;
-        char *pad = calloc(term_cols + 1, sizeof(char));
-
-        cursor_to((Vector2){(term_rows - GAME_HEIGHT) / 2 + 3, 1});
-        center_line(gs.playfield[0], pad, term_cols + 1);
-        center_line(gs.playfield[1], pad, term_cols + 1);
-        center_line(gs.playfield[2], pad, term_cols + 1);
-
-        free(pad);
-        // }
-
+        if (kb_hit()) {
+            char input_char = fgetc(stdin);
+            if (input_char == '\t') {
+                restart(&gs);
+                initialize_screen(&gs);
+            }
+            char cursor_char = gs.playfield[gs.cursor_pos.x][gs.cursor_pos.y];
+            if (input_char == cursor_char) {
+                if (cursor_char == ' ') { // finished word
+                    if (gs.no_error) {
+                        gs.word_count++;
+                    }
+                    gs.no_error = true; // reset no error flag
+                }
+                gs.started = true; // start timer after first correct hit
+                print_typed_char(&gs, cursor_char);
+                gs.cursor_pos = next_cursor_pos(&gs);
+            } else {
+                gs.no_error = false;
+            }
+        }
     }
+    set_stdin_flush(&term_config);
+    printf("\n\n%.2f WPM\n", (float)gs.word_count / timer_seconds * 60.0f);
 
     free_game(&gs);
     return 0;

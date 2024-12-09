@@ -37,6 +37,10 @@ void cursor_to(Vector2 pos) {
     printf("\033[%d;%dH", pos.x, pos.y);
 } 
 
+void clear_screen() {
+    printf("\033[2J");
+}
+
 Vector2 get_terminal_size() {
     struct winsize w;
     ioctl(0, TIOCGWINSZ, &w);

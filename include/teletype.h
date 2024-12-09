@@ -1,8 +1,9 @@
 #ifndef TELETYPE_H_
 #define TELETYPE_H_
 
-#include <time.h> // time_t
-#include "libtermio.h" // Vector2
+#include <stdbool.h>
+#include <time.h>
+#include "libtermio.h"
 
 #define MEM_ERR do { \
         fprintf(stderr, "ERROR: Could not allocate memory: %s:%d (%s)\n", __FILE__, __LINE__, __func__); \
@@ -27,9 +28,12 @@ typedef struct Timer_s {
 
 typedef struct GameState_s {
     Timer timer;
-    int cursor;
+    Vector2 cursor_pos;
     char **dict;
     char **playfield;
+    bool started;
+    int word_count;
+    bool no_error;
 } GameState;
 
 void free_game(GameState *gs);
@@ -40,10 +44,16 @@ char *string_from_dict(char **dict);
 
 char **initialize_playfield(char **dict);
 
-void scroll_playfield(char **playfield, char **dict);
+void scroll_playfield(GameState *gs);
 
-void initialize_screen(GameState *gs, Vector2 term_size);
+void initialize_screen(GameState *gs);
 
-void update_timer(Timer *timer);
+void restart(GameState *gs);
+
+void update_timer(GameState *gs);
+
+void print_typed_char(GameState *gs, char typed_char);
+
+Vector2 next_cursor_pos(GameState *gs);
 
 #endif // TELETYPE_H_

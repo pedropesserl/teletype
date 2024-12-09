@@ -27,6 +27,15 @@ static void center_line(char *line, char *pad, int pad_size) {
     printf("%s\n", pad);
 }
 
+static Vector2 screen_pos_from_cursor(GameState *gs) {
+    Vector2 term_size = get_terminal_size();
+    int term_rows = term_size.x, term_cols = term_size.y;
+    return (Vector2){
+        gs->cursor_pos.x + (term_rows - GAME_HEIGHT) / 2 + 3,
+        gs->cursor_pos.y + (term_cols + 1 - strlen(gs->playfield[gs->cursor_pos.x])) / 2,
+    };
+}
+
 char **read_dict_from_file(const char *dict_path) {
     char **dict = malloc(1000 * sizeof(char*));
     if (!dict) {
@@ -79,14 +88,34 @@ void free_game(GameState *gs) {
     free(gs->timer.string);
 }
 
-void scroll_playfield(char **playfield, char **dict) {
-    swap_strings(&playfield[0], &playfield[1]);
-    swap_strings(&playfield[1], &playfield[2]);
-    free(playfield[2]);
-    playfield[2] = string_from_dict(dict);
+void scroll_playfield(GameState *gs) {
+    // scroll lines
+    swap_strings(&gs->playfield[0], &gs->playfield[1]);
+    swap_strings(&gs->playfield[1], &gs->playfield[2]);
+    free(gs->playfield[2]);
+    gs->playfield[2] = string_from_dict(gs->dict);
+
+    // print playfield
+    Vector2 term_size = get_terminal_size();
+    int term_rows = term_size.x;
+    int term_cols = term_size.y;
+    char *pad = calloc(term_cols + 1, sizeof(char));
+    hide_cursor();
+    cursor_to((Vector2){(term_rows - GAME_HEIGHT) / 2 + 3, 1});
+    printf("%s", FG_WHITE);
+    center_line(gs->playfield[0], pad, term_cols + 1);
+    printf("%s", FG_LIGHT_GREY);
+    center_line(gs->playfield[1], pad, term_cols + 1);
+    center_line(gs->playfield[2], pad, term_cols + 1);
+    free(pad);
+
+    // restore cursor
+    cursor_to(screen_pos_from_cursor(gs));
+    show_cursor();
 }
 
-void initialize_screen(GameState *gs, Vector2 term_size) {
+void initialize_screen(GameState *gs) {
+    Vector2 term_size = get_terminal_size();
     int term_rows = term_size.x;
     int term_cols = term_size.y;
 
@@ -120,10 +149,51 @@ void initialize_screen(GameState *gs, Vector2 term_size) {
     free(pad);
 }
 
-void update_timer(Timer *timer) {
-    timer->seconds--;
-    sprintf(timer->string, "%02ld:%02ld", timer->seconds / 60, timer->seconds % 60);
-    cursor_to(timer->pos);
-    printf("%s%s", FG_WHITE, timer->string);
+void restart(GameState *gs) {
+    gs->timer.seconds = 30;
+    gs->cursor_pos = (Vector2){0};
+    gs->playfield = initialize_playfield(gs->dict);
+    gs->started = false;
+    gs->word_count = 0;
+    gs->no_error = true;
+}
+
+void update_timer(GameState *gs) {
+    gs->timer.seconds--;
+    sprintf(gs->timer.string, "%02ld:%02ld", gs->timer.seconds / 60, gs->timer.seconds % 60);
+    cursor_to(gs->timer.pos);
+    hide_cursor();
+    printf("%s%s", FG_WHITE, gs->timer.string);
     fflush(stdout);
+    cursor_to(screen_pos_from_cursor(gs));
+    show_cursor();
+}
+
+void print_typed_char(GameState *gs, char typed_char) {
+    cursor_to(screen_pos_from_cursor(gs));
+    printf("%s%c", FG_WHITE, typed_char);
+    fflush(stdout);
+}
+
+Vector2 next_cursor_pos(GameState *gs) {
+    int cursor_row = gs->cursor_pos.x;
+    int cursor_col = gs->cursor_pos.y;
+    int current_row_length = (int)strlen(gs->playfield[cursor_row]);
+    if (cursor_row == 0 && cursor_col == current_row_length - 1) {
+        return (Vector2){
+            .x = gs->cursor_pos.x + 1,
+            .y = 0,
+        };
+    }
+    if (cursor_col == current_row_length - 1) {
+        scroll_playfield(gs);
+        return (Vector2){
+            .x = gs->cursor_pos.x,
+            .y = 0,
+        };
+    }
+    return (Vector2){
+        .x = gs->cursor_pos.x,
+        .y = gs->cursor_pos.y + 1,
+    };
 }
